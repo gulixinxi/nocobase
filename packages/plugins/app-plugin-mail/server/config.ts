@@ -45,6 +45,8 @@ export interface MailConfig {
    * every other consumer of the jobs service.
    */
   readonly jobs?: string;
+  /** The `queue` configuration synchronization events use. Omitted, they follow `queue.default`. */
+  readonly queue?: string;
   readonly providers: Readonly<Record<string, MailProviderConfigEntry>>;
 }
 
@@ -67,6 +69,7 @@ export const mailEnvironmentMappings: Readonly<
   MAIL_PUSH_WEBHOOK_URL: envString('mail.pushWebhookUrl'),
   MAIL_PUSH_WEBHOOK_SECRET: envString('mail.pushWebhookSecret'),
   MAIL_JOBS: envString('mail.jobs'),
+  MAIL_QUEUE: envString('mail.queue'),
 };
 
 /** Application-owned default configuration factory for the Mail module. */
@@ -191,6 +194,16 @@ export function resolveMailConfig(value: unknown): MailConfig {
     );
   }
 
+  const queue = value.queue;
+  if (
+    queue !== undefined &&
+    (typeof queue !== 'string' || queue.trim().length === 0)
+  ) {
+    throw new TypeError(
+      'Mail configuration at "mail.queue" must be a non-empty string.',
+    );
+  }
+
   const configuredAutomaticSyncIntervalMs = value.automaticSyncIntervalMs;
   if (
     configuredAutomaticSyncIntervalMs !== undefined &&
@@ -226,6 +239,7 @@ export function resolveMailConfig(value: unknown): MailConfig {
     ...(pushWebhookUrl === undefined ? {} : { pushWebhookUrl }),
     ...(pushWebhookSecret === undefined ? {} : { pushWebhookSecret }),
     ...(jobs === undefined ? {} : { jobs }),
+    ...(queue === undefined ? {} : { queue }),
     providers: providers as MailConfig['providers'],
   };
 }
